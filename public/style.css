@@ -1,0 +1,355 @@
+:root {
+    --bg-color: #F2F2F7;
+    --card-bg: rgba(255, 255, 255, 0.75);
+    --text-primary: #1C1C1E;
+    --text-secondary: #8E8D92;
+    --accent: #007AFF;
+    --green: #34C759;
+    --red: #FF3B30;
+    --border: rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.app-container {
+    padding: 20px;
+    padding-bottom: 100px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Header */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.status-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+}
+
+.status-text.off {
+    color: var(--red);
+}
+
+/* Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 28px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #D1D1D6;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+    background-color: var(--green);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--green);
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.slider.round {
+    border-radius: 28px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.card-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.card-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+/* Textarea */
+textarea {
+    width: 100%;
+    border: 1px solid #E5E5EA;
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+textarea:focus {
+    border-color: var(--accent);
+}
+
+/* Schedule Inputs */
+.schedule-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #E5E5EA;
+}
+
+.schedule-group:last-child {
+    border-bottom: none;
+}
+
+.schedule-group label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-inputs input[type="time"] {
+    border: 1px solid #E5E5EA;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+}
+
+/* Chat History */
+.chat-history-list {
+    max-height: 250px;
+    overflow-y: auto;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.chat-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    max-width: 85%;
+    word-wrap: break-word;
+}
+
+.chat-bubble.bot {
+    background-color: #E5E5EA;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.chat-bubble.user {
+    background-color: var(--accent);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-time {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 4px;
+    display: block;
+    text-align: right;
+}
+
+.btn-refresh {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 8px 0;
+}
+
+/* Floating Action Button */
+.floating-save {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(242, 242, 247, 1) 50%, rgba(242, 242, 247, 0) 100%);
+    display: flex;
+    justify-content: center;
+}
+
+.btn-primary {
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    max-width: 600px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 122, 255, 0.3);
+    transition: transform 0.1s;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.toast.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Checkbox */
+.checkbox-container {
+    display: block;
+    position: relative;
+    padding-left: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: #E5E5EA;
+    border-radius: 4px;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: var(--accent);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.loading-history {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 20px 0;
+}

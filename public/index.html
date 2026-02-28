@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel iSti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+
+        <header class="top-nav">
+            <div class="logo">
+                <span class="bot-icon">🤖</span>
+                <span class="bot-name">iSti Panel</span>
+            </div>
+            <div class="status-container">
+                <span id="status-text" class="status-text">Ativa</span>
+                <label class="switch">
+                    <input type="checkbox" id="bot-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </header>
+
+        <main class="content">
+            <!-- Personality Card -->
+            <section class="card glass-card">
+                <div class="card-header">
+                    <h3>🧠 Personalidade da iSti</h3>
+                    <p>Como ela deve se comportar com os clientes.</p>
+                </div>
+                <div class="card-body">
+                    <textarea id="prompt-input" rows="6"
+                        placeholder="Escreva as regras de comportamento do bot..."></textarea>
+                </div>
+            </section>
+
+            <!-- Schedule Card -->
+            <section class="card glass-card">
+                <div class="card-header">
+                    <h3>⏰ Horários Automáticos</h3>
+                    <p>Defina quando a iSti deve trabalhar sozinha.</p>
+                </div>
+                <div class="card-body">
+                    <div class="schedule-group">
+                        <label>Dia de Semana</label>
+                        <div>
+                            <label class="checkbox-container" style="margin-bottom: 10px;">
+                                <input type="checkbox" id="weekday-24h">
+                                <span class="checkmark"></span>
+                                Atender 24h
+                            </label>
+                            <div class="time-inputs" id="weekday-time-inputs">
+                                <input type="time" id="weekday-start" value="18:00">
+                                <span>às</span>
+                                <input type="time" id="weekday-end" value="08:00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="schedule-group">
+                        <label>Feriados/FDS</label>
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="weekend-active" checked>
+                            <span class="checkmark"></span>
+                            Atender 24h
+                        </label>
+                    </div>
+                    <div class="schedule-group">
+                        <label>Retorno Automático</label>
+                        <div class="time-inputs">
+                            <input type="number" id="auto-return-minutes" value="10" min="0"
+                                style="width: 60px; border: 1px solid #E5E5EA; border-radius: 8px; padding: 6px;">
+                            <span style="font-size: 14px;">minutos</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Conversation History -->
+            <section class="card glass-card">
+                <div class="card-header">
+                    <h3>💬 Últimas Conversas</h3>
+                    <p>O que a iSti andou falando (últimas 20 msgs).</p>
+                </div>
+                <div class="card-body">
+                    <div class="chat-history-list" id="chat-history">
+                        <!-- History items generated here -->
+                        <div class="loading-history">Carregando conversas...</div>
+                    </div>
+                    <button class="btn-refresh" id="refresh-chat">↻ Atualizar</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Fixed bottom save btn -->
+        <div class="floating-save">
+            <button id="btn-save" class="btn-primary">Salvar Configurações</button>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">Salvo com sucesso! 🎉</div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
