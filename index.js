@@ -1,4 +1,8 @@
 require('dotenv').config();
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 const express = require('express');
 const cors = require('cors');
@@ -142,16 +146,23 @@ function shouldBotRespond() {
 // --- CONFIGURAÇÃO DE E-MAIL ---
 const mailTransporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: 587, // Alterado para porta 587, porta 465 costuma falhar em infra de nuvem
-    secure: false, // TLS via STARTTLS
+    port: parseInt(process.env.MAIL_PORT || '465'),
+    secure: (process.env.MAIL_PORT === '465' || !process.env.MAIL_PORT),
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    family: 4,
     auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false,
+        servername: process.env.MAIL_HOST || 'smtp.gmail.com'
     }
 });
 
 async function sendTransferEmail(phone, customerName) {
-    // Definimos o envio em uma Promise que não trava o fluxo principal
+    console.log(`📡 Iniciando envio de e-mail para ${customerName} (${phone})...`);
     return new Promise((resolve, reject) => {
         const mailOptions = {
             from: `"iSti Alert 🤖" <${process.env.MAIL_USER}>`,
@@ -166,10 +177,10 @@ async function sendTransferEmail(phone, customerName) {
 
         mailTransporter.sendMail(mailOptions, (error, info) => {
             if (error) {
-                console.error(`❌ Erro ao enviar e-mail: ${error.message}`);
+                console.error(`❌ ERRO NO ENVIO (DETALHADO):`, error);
                 return reject(error);
             }
-            console.log(`📧 E-mail de notificação enviado com sucesso!`);
+            console.log(`📧 E-mail ENVIADO com sucesso! Resposta: ${info.response}`);
             resolve(info);
         });
     });
@@ -216,7 +227,7 @@ async function consultarEstoqueTexto() {
             const nomeCompleto = p.model || p.name || 'Produto sem nome';
             const nomeBase = nomeCompleto
                 .replace(/\s*\d+\s*(GB|TB)/i, '')
-                .replace(/\s*(Azul Profundo|Laranja Cósmico|Prateado|Titânio Natural|Titânio Preto|Titânio Branco|Titânio Azul|Titânio Areia|Meia-?noite|Estelar|Cinza Espacial|Dourado|Verde|Azul|Roxo|Amarelo|Rosa|Preto|Branco|Vermelho|Black|Midnight|Starlight|Silver)\s*$/i, '')
+                .replace(/\s*(Azul Profundo|Azul Névoa|Laranja Cósmico|Prateado|Titânio Natural|Titânio Preto|Titânio Branco|Titânio Azul|Titânio Areia|Meia-?noite|Estelar|Starlight|Lavanda|Lilás|Cinza Espacial|Dourado|Verde|Azul|Roxo|Amarelo|Rosa|Preto|Branco|Vermelho|Black|Midnight|Starlight|Silver|Grafite|Pacific Blue|Sierra Blue|Alpine Green|Deep Purple|Space Black|Natural Titanium|White Titanium|Black Titanium|Blue Titanium|Desert Titanium)\s*$/i, '')
                 .trim();
             const storageVal = extrairStorage(p);
             const cor = p.color || 'padrão';
@@ -265,7 +276,7 @@ async function consultarEstoqueTexto() {
             })
             .slice(0, 800);
 
-        const listaFinal = sorted.map(item => `- ${item.display}${item.battery}${item.warranty} [Local: ${item.location}] -> ${formatarPreco(item.price)}`);
+        const listaFinal = sorted.map(item => `- ${item.display}${item.battery}${item.warranty} -> ${formatarPreco(item.price)}`);
         return `[ESTOQUE ATUAL]\n${listaFinal.join('\n')}`;
     } catch (err) {
         return 'Erro interno ao ler estoque.';
@@ -313,12 +324,18 @@ const usuariosSendoProcessados = new Set();
 client.on('message_create', async (msg) => {
     if (msg.to && (msg.to.includes('@g.us') || msg.to.includes('@broadcast'))) return;
     if (!msg.fromMe) return;
+
     const numeroCliente = msg.to;
-    if (botRespondendo[numeroCliente] || botSentMsgIds.has(msg.id._serialized)) {
+
+    // Se a mensagem foi gerada pelo próprio código do bot, ignoramos o silenciamento
+    if (botSentMsgIds.has(msg.id._serialized)) {
         botSentMsgIds.delete(msg.id._serialized);
         return;
     }
-    const texto = msg.body.trim().toLowerCase();
+
+    const texto = (msg.body || "").trim().toLowerCase();
+
+    // Comando manual para retomar o bot
     if (texto === '/retomar') {
         if (botConfig.clientesMudos[numeroCliente]) {
             delete botConfig.clientesMudos[numeroCliente];
@@ -331,9 +348,12 @@ client.on('message_create', async (msg) => {
         }
         return;
     }
+
+    // Se o humano mandou qualquer outra coisa, silencia o bot
     if (numeroCliente && numeroCliente.includes('@c.us')) {
         botConfig.clientesMudos[numeroCliente] = Date.now();
         saveGlobalConfig();
+        console.log(`👤 [INTERVENÇÃO] Humano assumiu a conversa com ${numeroCliente}. Bot silenciado.`);
     }
 });
 
@@ -459,7 +479,7 @@ ${agora} (Fuso de São Paulo)
 1. PRO vs PRO MAX: NUNCA confunda modelos Pro com Pro Max. Eles têm tamanhos e preços DIFERENTES.
 2. CPO = NOVO: Aparelhos CPO são NOVOS e LACRADOS. Se o cliente pedir "Novo", mostre os 'Novos' e os 'CPO'. Nunca mostre 'Seminovo' se pedirem Novo.
 `;
-            const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[RESPOSTAS CURTAS]\n\nESTOQUE:\n${estoque}`;
+            const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[REGRA DE AMBIGUIDADE]\nSe o cliente pedir um modelo genérico (ex: "iPhone 17"), e existirem variações (Normal, Pro, Pro Max) no estoque, você OBRIGATORIAMENTE deve listar as categorias disponíveis e perguntar qual versão ele deseja. NUNCA assuma que ele quer o Pro Max ou o Normal.\n\n[RESPOSTAS CURTAS]\n\nESTOQUE:\n${estoque}`;
 
             const response = await openai.chat.completions.create({
                 model: "deepseek-chat",
@@ -523,6 +543,11 @@ ${agora} (Fuso de São Paulo)
         if (!textoRespostaBot) textoRespostaBot = "💁🏻‍♀️ Só um minutinho que vou verificar isso pra você! 🏃🏻‍♀️";
 
         // RESPONDE NO WHATSAPP
+        if (botConfig.clientesMudos[numeroCliente]) {
+            console.log(`🛑 Intervenção humana detectada! Cancelando envio de resposta para ${numeroCliente}`);
+            return;
+        }
+
         botRespondendo[numeroCliente] = true;
         try {
             // Enviamos sem o preview de link para evitar o card no topo

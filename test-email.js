@@ -1,16 +1,23 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 const mailTransporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: process.env.MAIL_PORT || 465,
-    secure: true,
+    port: parseInt(process.env.MAIL_PORT || '465'),
+    secure: (process.env.MAIL_PORT === '465' || !process.env.MAIL_PORT),
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
     family: 4,
     auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
     },
     tls: {
+        rejectUnauthorized: false,
         servername: process.env.MAIL_HOST || 'smtp.gmail.com'
     }
 });
