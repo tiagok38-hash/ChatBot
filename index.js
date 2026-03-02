@@ -183,17 +183,37 @@ async function consultarEstoqueTexto() {
     try {
         const { data: produtos, error } = await supabase
             .from('products')
-            .select('name, model, color, storage, condition, price, stock, batteryHealth, warranty, location')
+            .select('name, model, color, storage, condition, price, stock, batteryHealth, warranty, storageLocation')
             .gt('stock', 0);
 
         if (error) return 'Estoque indisponível.';
         if (!produtos || produtos.length === 0) return 'Estoque zerado.';
 
-        // ... (resto das funções auxiliares)
+        // Extrai GB do nome caso o campo storage esteja vazio
+        function extrairStorage(p) {
+            if (p.storage) {
+                const val = Number(p.storage);
+                if (val >= 1000) return (val / 1000) + 'TB';
+                return String(val);
+            }
+            const nomeParaBusca = p.name || p.model || '';
+            const match = nomeParaBusca.match(/(\d+)\s*(GB|TB)/i);
+            if (match) {
+                if (match[2].toUpperCase() === 'TB') return match[1] + 'TB';
+                return match[1];
+            }
+            return '';
+        }
+
+        // Formata preço corretamente: R$ 8.479,99
+        function formatarPreco(price) {
+            if (!price) return 'R$ 0,00';
+            return 'R$ ' + Number(price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
 
         const estoqueAgrupado = {};
         produtos.forEach(p => {
-            const local = (p.location || '').toLowerCase();
+            const local = (p.storageLocation || '').toLowerCase();
             // REGRA: Se o local for "assistência", nunca mostrar ao cliente
             if (local.includes('assistência') || local.includes('assistencia')) return;
 
@@ -229,7 +249,16 @@ async function consultarEstoqueTexto() {
             }
         });
 
-        // ... (resto da lógica de ordenação)
+        const getPriority = (name) => {
+            const n = name.toLowerCase();
+            if (n.includes('bateria') || n.includes('tela') || n.includes('peça') || n.includes('acessórios')) return 10;
+            if (n.includes('iphone')) return 1;
+            if (n.includes('ipad')) return 2;
+            if (n.includes('watch')) return 3;
+            if (n.includes('mac')) return 4;
+            if (n.includes('airpods')) return 5;
+            return 6;
+        };
 
         const sorted = Object.values(estoqueAgrupado)
             .sort((a, b) => {
@@ -241,7 +270,7 @@ async function consultarEstoqueTexto() {
             .slice(0, 800);
 
         const listaFinal = sorted.map(item => `- ${item.display}${item.battery}${item.warranty} [Local: ${item.location}] -> ${formatarPreco(item.price)}`);
-        return listaFinal.join('\n');
+        return `[ESTOQUE ATUAL]\n${listaFinal.join('\n')}`;
     } catch (err) {
         return 'Erro interno ao ler estoque.';
     }
