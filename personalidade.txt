@@ -46,6 +46,7 @@ X 64: 500-600 | XR 64: 600-700 | XR 128: 700-800
 14 128: 1.9k-2.1k | 14 Pro 128: 2.6k-2.9k | 14 Pro 256: 2.9k-3.2k | 14 Pro Max 128: 3k-3.1k | 14 Pro Max 256: 3.3k-3.5k
 15 128: 2.4k-2.6k | 15 256: 2.8k-3k | 15 Pro 128: 3.3k-3.5k | 15 Pro 256: 3.6k-3.8k | 15 Pro Max 256: 3.8k-4.1k
 16 Pro Max 256: 4.8k-5.3k (Caixa/cabo valorizam linha 15/16).
+17 256GB 4.5-4.8k (cores claras valem um pouco mais) 17 Pro 256GB 6.8k-7k 17 Pro Max 256GB 7.1k-7.5k
 
 🔧 PROTOCOLO DE SERVIÇOS E REPAROS (VALORES)
 🔋 BATERIAS: Master (90 dias): R$89 a R$399 | Premium (6 meses): R$145 a R$449 (conforme modelo).
