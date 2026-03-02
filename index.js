@@ -9,8 +9,15 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
+const nodemailer = require('nodemailer');
 
 const openai = new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: 'https://api.deepseek.com'
+});
+
+// OpenAI Real para Whisper (Áudio)
+const openaiWhisper = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -18,10 +25,13 @@ const openai = new OpenAI({
 const configPath = path.join(__dirname, 'bot-config.json');
 const personalityPath = path.join(__dirname, 'personalidade.txt');
 
+let lastQrCode = ""; // Armazena o último QR Code gerado para exibir no painel
+
 let botConfig = {
     active: true,
     prompt: `Você é a iSti, assistente virtual da iStore. Responda de forma simpática usando seu emoji 💁🏻‍♀️. (O restante da personalidade é lido do arquivo personalidade.txt)`,
-    schedule: { start: '18:00', end: '08:00', weekend: true, weekday24h: false, autoReturnMinutes: 10 }, // Ex: horários em que atende
+    schedule: { start: '18:00', end: '08:00', weekend: true, weekday24h: false, autoReturnMinutes: 10 },
+    notificationEmail: '',
     clientesMudos: {}
 };
 
@@ -68,14 +78,31 @@ app.post('/api/config', (req, res) => {
     res.json({ success: true });
 });
 app.get('/api/history', (req, res) => res.json(chatHistoryPanel));
+app.get('/api/qr', (req, res) => res.json({ qr: lastQrCode }));
+app.post('/api/test-email', async (req, res) => {
+    if (!botConfig.notificationEmail) return res.status(400).json({ error: 'E-mail não configurado no painel.' });
+    try {
+        await sendTransferEmail('TESTE-BOT@c.us', 'Usuário de Teste');
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🌐 Painel Administrativo da iSti rodando em: http://localhost:${PORT}`);
 });
 
 
-console.log("🛠️ Inicializando APIs (Gemini e Supabase)...");
+console.log("🛠️ Inicializando APIs e Verificando Credenciais...");
+console.log("Estado das variáveis:", {
+    GEMINI: process.env.GEMINI_API_KEY ? "✅ OK" : "❌ Faltando",
+    SUPABASE: process.env.SUPABASE_URL ? "✅ OK" : "❌ Faltando",
+    OPENAI: process.env.OPENAI_API_KEY ? "✅ OK" : "❌ Faltando",
+    PORTA: process.env.PORT || 3000
+});
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
@@ -92,6 +119,8 @@ function shouldBotRespond() {
     const current = d.getHours() * 60 + d.getMinutes();
     const [startH, startM] = botConfig.schedule.start.split(':').map(Number);
     const [endH, endM] = botConfig.schedule.end.split(':').map(Number);
+
+    console.log(`⏱️ Verificando horário: Agora ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}. Atendimento das ${botConfig.schedule.start} às ${botConfig.schedule.end}`);
     const start = startH * 60 + startM;
     const end = endH * 60 + endM;
 
@@ -101,80 +130,117 @@ function shouldBotRespond() {
     } else {
         respond = current >= start && current <= end;
     }
-    if (!respond) console.log(`🕒 Bot fora do horário de atendimento (${botConfig.schedule.start} - ${botConfig.schedule.end}).`);
+
+    if (!respond) {
+        console.log(`🕒 Bot FORA do horário de atendimento automático.`);
+    } else {
+        console.log(`🕒 Bot DENTRO do horário de atendimento automático.`);
+    }
     return respond;
+}
+
+// --- CONFIGURAÇÃO DE E-MAIL ---
+const mailTransporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST || 'smtp.gmail.com',
+    port: process.env.MAIL_PORT || 465,
+    secure: true,
+    family: 4, // Força o uso de IPv4 para evitar erros ENETUNREACH (IPv6) no Railway/Docker
+    auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+    },
+    tls: {
+        servername: process.env.MAIL_HOST || 'smtp.gmail.com'
+    }
+});
+
+async function sendTransferEmail(phone, customerName) {
+    // Definimos o envio em uma Promise que não trava o fluxo principal
+    return new Promise((resolve, reject) => {
+        const mailOptions = {
+            from: `"iSti Alert 🤖" <${process.env.MAIL_USER}>`,
+            to: botConfig.notificationEmail || process.env.MAIL_USER,
+            subject: `🚨 Transferência: ${customerName}`,
+            text: `Um cliente solicitou atendimento humano.\n\n` +
+                `Nome/Info: ${customerName}\n` +
+                `Telefone: ${phone}\n` +
+                `Link direto: https://wa.me/${phone.split('@')[0]}\n\n` +
+                `A iSti foi pausada para este número por ${botConfig.schedule.autoReturnMinutes || 10} minutos.`
+        };
+
+        mailTransporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error(`❌ Erro ao enviar e-mail: ${error.message}`);
+                return reject(error);
+            }
+            console.log(`📧 E-mail de notificação enviado com sucesso!`);
+            resolve(info);
+        });
+    });
 }
 
 async function consultarEstoqueTexto() {
     try {
         const { data: produtos, error } = await supabase
             .from('products')
-            .select('name, model, color, storage, condition, price, stock, batteryHealth, warranty')
+            .select('name, model, color, storage, condition, price, stock, batteryHealth, warranty, location')
             .gt('stock', 0);
 
         if (error) return 'Estoque indisponível.';
         if (!produtos || produtos.length === 0) return 'Estoque zerado.';
 
+        // ... (resto das funções auxiliares)
+
         const estoqueAgrupado = {};
         produtos.forEach(p => {
-            const nomeBase = p.name || p.model || 'Produto sem nome';
-            const chave = `${nomeBase}-${p.color}-${p.storage}-${p.condition}-${p.warranty || ''}`;
+            const local = (p.location || '').toLowerCase();
+            // REGRA: Se o local for "assistência", nunca mostrar ao cliente
+            if (local.includes('assistência') || local.includes('assistencia')) return;
+
+            const nomeCompleto = p.model || p.name || 'Produto sem nome';
+            const nomeBase = nomeCompleto
+                .replace(/\s*\d+\s*(GB|TB)/i, '')
+                .replace(/\s*(Azul Profundo|Laranja Cósmico|Prateado|Titânio Natural|Titânio Preto|Titânio Branco|Titânio Azul|Titânio Areia|Meia-?noite|Estelar|Cinza Espacial|Dourado|Verde|Azul|Roxo|Amarelo|Rosa|Preto|Branco|Vermelho|Black|Midnight|Starlight|Silver)\s*$/i, '')
+                .trim();
+            const storageVal = extrairStorage(p);
+            const cor = p.color || 'padrão';
+            const condicao = p.condition || 'Novo';
+            const garantia = (p.warranty || '').toLowerCase().trim();
+
+            const chave = `${nomeBase.toLowerCase()}-${cor.toLowerCase()}-${storageVal.toLowerCase()}-${condicao.toLowerCase()}-${local}`;
+
             if (!estoqueAgrupado[chave]) {
                 let display = nomeBase;
-                const storageStr = p.storage ? `${p.storage}GB` : '';
-                if (storageStr && !nomeBase.includes(storageStr)) display += ` ${storageStr}`;
-                if (p.condition) display += ` (${p.color || 'padrão'} / ${p.condition})`;
-                else display += ` (${p.color || 'padrão'} / Novo)`;
+                const storageStr = storageVal.includes('TB') ? storageVal : (storageVal ? `${storageVal}GB` : '');
+                if (storageStr && !display.includes(storageStr)) display += ` ${storageStr}`;
+                display += ` (${cor} / ${condicao})`;
+
+                // Formata o local para exibição amigável ao cliente
+                let localDisplay = "Loja Santa Cruz";
+                if (local.includes('caruaru')) localDisplay = "Caruaru";
 
                 estoqueAgrupado[chave] = {
                     display,
                     price: p.price,
-                    warranty: p.warranty ? ` [Garantia: ${p.warranty}]` : '',
-                    battery: p.condition !== 'Novo' && p.batteryHealth ? ` [Saúde: ${p.batteryHealth}%]` : ''
+                    location: localDisplay,
+                    warranty: garantia ? ` [Garantia: ${garantia}]` : '',
+                    battery: condicao !== 'Novo' && p.batteryHealth ? ` [Saúde: ${p.batteryHealth}%]` : ''
                 };
             }
         });
 
-        const getPriority = (name) => {
-            const n = name.toLowerCase();
-            if (n.includes('bateria') || n.includes('tela') || n.includes('peça') || n.includes('acessórios')) return 10;
-            if (n.includes('iphone')) return 1;
-            if (n.includes('ipad')) return 2;
-            if (n.includes('watch')) return 3;
-            if (n.includes('mac')) return 4;
-            if (n.includes('airpods')) return 5;
-            return 6;
-        };
-
-        const getBaseModel = (display) => {
-            let base = display.split('(')[0].trim();
-            base = base.replace(/\d+GB/i, '').replace(/Azul|Meia-noite|Estelar|Verde|Rosa|Amarelo|Vermelho|Branco|Preto|Sideral|Prata|Dourado|Grafite|Verde Alpino|Azul-Sierra|Roxo|Titânio|Natural|Branco/gi, '').trim();
-            return base;
-        };
+        // ... (resto da lógica de ordenação)
 
         const sorted = Object.values(estoqueAgrupado)
             .sort((a, b) => {
                 const prioA = getPriority(a.display);
                 const prioB = getPriority(b.display);
                 if (prioA !== prioB) return prioA - prioB;
-                const baseA = getBaseModel(a.display);
-                const baseB = getBaseModel(b.display);
-                if (baseA !== baseB) return baseA.localeCompare(baseB);
-                const getCondPrio = (d) => {
-                    if (d.includes('Novo')) return 0;
-                    if (d.includes('CPO')) return 1;
-                    if (d.includes('Open Box')) return 2;
-                    if (d.includes('Vitrini')) return 3;
-                    return 4;
-                };
-                const cpA = getCondPrio(a.display);
-                const cpB = getCondPrio(b.display);
-                if (cpA !== cpB) return cpA - cpB;
                 return a.display.localeCompare(b.display);
             })
             .slice(0, 800);
 
-        const listaFinal = sorted.map(item => `- ${item.display}${item.battery}${item.warranty} -> R$ ${item.price || 0},00 [SÓ 1 UNIDADE]`);
+        const listaFinal = sorted.map(item => `- ${item.display}${item.battery}${item.warranty} [Local: ${item.location}] -> ${formatarPreco(item.price)}`);
         return listaFinal.join('\n');
     } catch (err) {
         return 'Erro interno ao ler estoque.';
@@ -185,12 +251,34 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--hide-scrollbars',
+            '--disable-notifications',
+            '--disable-extensions'
+        ]
     }
 });
 
-client.on('qr', (qr) => qrcode.generate(qr, { small: true }));
-client.on('ready', () => console.log('✅ Tudo pronto! A iSti está rodando no WhatsApp!'));
+client.on('qr', async (qr) => {
+    qrcode.generate(qr, { small: true });
+    // Gera versão em imagem (Base64) para o painel administrativo
+    const QRCodeLib = require('qrcode');
+    lastQrCode = await QRCodeLib.toDataURL(qr);
+    console.log("🆕 Novo QR Code gerado para o Painel Administrativo.");
+});
+
+client.on('ready', () => {
+    lastQrCode = ""; // Limpa o QR Code após conectar
+    console.log('✅ Tudo pronto! A iSti está rodando no WhatsApp!');
+});
 
 const historicoChats = {};
 const botRespondendo = {};
@@ -198,7 +286,7 @@ const botSentMsgIds = new Set();
 const usuariosSendoProcessados = new Set();
 
 client.on('message_create', async (msg) => {
-    if (msg.to && msg.to.includes('@g.us')) return;
+    if (msg.to && (msg.to.includes('@g.us') || msg.to.includes('@broadcast'))) return;
     if (!msg.fromMe) return;
     const numeroCliente = msg.to;
     if (botRespondendo[numeroCliente] || botSentMsgIds.has(msg.id._serialized)) {
@@ -227,7 +315,8 @@ client.on('message_create', async (msg) => {
 client.on('message', async (msg) => {
     const numeroCliente = msg.from;
     const textoOriginal = msg.body || "";
-    if (numeroCliente.includes('@g.us')) return;
+    console.log(`📩 [${new Date().toLocaleTimeString()}] Mensagem de ${numeroCliente}: "${textoOriginal}"`);
+    if (numeroCliente.includes('@g.us') || numeroCliente.includes('@broadcast')) return;
 
     if (usuariosSendoProcessados.has(numeroCliente)) {
         console.log(`⏳ Ignorando msg de ${numeroCliente} (em processamento).`);
@@ -242,7 +331,10 @@ client.on('message', async (msg) => {
         } else return;
     }
 
-    if (!shouldBotRespond()) return;
+    if (!shouldBotRespond()) {
+        console.log(`🚫 Ignorando msg de ${numeroCliente} (Bot configurado para NÃO responder agora).`);
+        return;
+    }
 
     const telefoneVistoPanel = numeroCliente.replace('@c.us', '');
     if (!msg.hasMedia) addHistory('user', textoOriginal, telefoneVistoPanel);
@@ -273,87 +365,136 @@ client.on('message', async (msg) => {
 
         let transcricaoAudio = "";
         let textoRespostaBot = "";
-        // Se a mensagem não tem mídia e o corpo é vazio, ignorar silenciosamente
         let mensagemUsuario = textoOriginal;
-        if (msg.hasMedia && !transcricaoAudio) {
-            mensagemUsuario = "O cliente enviou uma mídia/imagem/áudio.";
-        }
-        if (!mensagemUsuario) {
-            usuariosSendoProcessados.delete(numeroCliente);
-            return;
-        }
 
         if (contemLink || ehInstagram) {
             console.log(`🔗 Link/Ad detectado de ${numeroCliente}. Redirecionando para humano.`);
-            textoRespostaBot = "Oi! Sou a iSti, assistente virtual da iStore 💁🏻‍♀️.\n\nNotei que você enviou um link ou post! 🍎 Vou chamar um especialista agora mesmo para te atender. Só um instante! [[TRANSFERENCIA_HUMANA_CONFIRMADA]]";
+            textoRespostaBot = "Oi! Sou a iSti, assistente virtual da iStore 💁🏻‍♀️.\n\nNotei que você enviou um link ou post! 🍎 Vou chamar um especialista agora mesmo para te atender. _Chamando vendedor… só um instante_ 🏃🏻‍♀️➡️ [[TRANSFERENCIA_HUMANA_CONFIRMADA]]";
         } else {
             const chatWs = await msg.getChat();
             await chatWs.sendStateTyping();
 
-            if (msg.hasMedia) {
+            // Processa mídia (áudio/imagem)
+            console.log(`🔎 Verificando mídia: hasMedia=${msg.hasMedia}, type=${msg.type}`);
+            if (msg.hasMedia || msg.type === 'audio' || msg.type === 'ptt') {
+                const tmpPath = path.join(__dirname, `temp_audio_${Date.now()}.ogg`);
                 try {
                     const media = await msg.downloadMedia();
-                    if (media.mimetype.includes('audio') || msg.type === 'ptt') {
-                        const modelGemini = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                        const mimeLimpo = media.mimetype.split(';')[0]; // Deixa só 'audio/ogg' do 'audio/ogg; codecs=opus'
-                        const audioPart = { inlineData: { data: media.data, mimeType: mimeLimpo } };
-                        const result = await modelGemini.generateContent(["Transcreva este áudio em detalhes do que foi falado pelo cliente, seja preciso (se não tiver voz resuma):", audioPart]);
-                        transcricaoAudio = result.response.text();
-                        console.log("Transcreveu sucesso: ", transcricaoAudio);
+                    if (media && (media.mimetype.includes('audio') || msg.type === 'ptt')) {
+                        console.log(`🎤 Áudio recebido. Processando com OpenAI Whisper...`);
+                        const buffer = Buffer.from(media.data, 'base64');
+                        fs.writeFileSync(tmpPath, buffer);
+                        const transcription = await openaiWhisper.audio.transcriptions.create({
+                            file: fs.createReadStream(tmpPath),
+                            model: "whisper-1",
+                        });
+                        transcricaoAudio = transcription.text;
+                        console.log("✅ Whisper Transcreveu: ", transcricaoAudio);
+                    } else if (media && media.mimetype.includes('image')) {
+                        console.log(`📷 Imagem recebida. Processando com Gemini...`);
+                        try {
+                            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                            const promptImagem = "Descreva detalhadamente mas de forma resumida esta imagem e extraia os textos importantes. Se for sobre celular, tente identificar estado e cor. Você é os olhos da inteligência artificial iSti da loja iStore. Responda em português direto para o modelo base processar.";
+                            const result = await model.generateContent([
+                                promptImagem,
+                                {
+                                    inlineData: {
+                                        data: media.data,
+                                        mimeType: media.mimetype
+                                    }
+                                }
+                            ]);
+                            const imgDesc = result.response.text();
+                            transcricaoAudio = `[O cliente enviou uma imagem. Descrição da imagem analisada: ${imgDesc}]`;
+                            console.log("✅ Gemini descreveu a imagem: ", imgDesc);
+                        } catch (imgErr) {
+                            console.error("❌ ERRO NO GEMINI (IMAGEM):", imgErr.message);
+                            transcricaoAudio = "[O cliente enviou uma imagem, mas ocorreu um erro na nuvem ao analisá-la.]";
+                        }
                     }
                 } catch (err) {
-                    console.error("Erro na transcrição de áudio pelo Gemini:", err.message || err);
-                    transcricaoAudio = "[O cliente enviou um áudio, mas ocorreu um erro no processador e não pude ouvir. Peça para escrever.]";
+                    console.error("❌ ERRO NA MÍDIA:", err.message);
+                    transcricaoAudio = "[Erro interno ao baixar mídia do WhatsApp]";
+                } finally {
+                    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
                 }
             }
 
+            mensagemUsuario = transcricaoAudio ? `${transcricaoAudio}\n${textoOriginal}`.trim() : textoOriginal;
+            if (!mensagemUsuario && msg.hasMedia) mensagemUsuario = "[Mídia (Não foi possível analisar)]";
+
             const estoque = await consultarEstoqueTexto();
-            const promptSistema = `${botConfig.prompt}\n\n[RESPOSTAS CURTAS: Máximo 2 frases.]\n\nESTOQUE ATUAL:\n${estoque}`;
+            const agora = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: 'full', timeStyle: 'short' });
 
-            let contextMsg = "";
-            if (msg.hasQuotedMsg) {
-                try {
-                    const quoted = await msg.getQuotedMessage();
-                    contextMsg = `[O cliente está respondendo a: "${quoted.body}"]\n\n`;
-                } catch (e) { }
-            }
+            const regrasAdicionais = `
+[DATA/HORA ATUAL]
+${agora} (Fuso de São Paulo)
 
-            mensagemUsuario = contextMsg + (transcricaoAudio || textoOriginal || "O cliente enviou uma imagem/mídia.");
+[REGRAS CRÍTICAS DE NEGÓCIO]
+1. PRO vs PRO MAX: NUNCA confunda modelos Pro com Pro Max. Eles têm tamanhos e preços DIFERENTES.
+2. CPO = NOVO: Aparelhos CPO são NOVOS e LACRADOS. Se o cliente pedir "Novo", mostre os 'Novos' e os 'CPO'. Nunca mostre 'Seminovo' se pedirem Novo.
+`;
+            const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[RESPOSTAS CURTAS]\n\nESTOQUE:\n${estoque}`;
 
             const response = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
+                model: "deepseek-chat",
                 messages: [{ role: "system", content: promptSistema }, ...historicoChats[numeroCliente], { role: "user", content: mensagemUsuario }],
-                stream: false
             }, { timeout: 30000 });
 
             textoRespostaBot = response.choices[0].message.content;
-
-            textoRespostaBot = textoRespostaBot
-                .replace(/14[,.]10%?/g, '')
-                .replace(/taxa de 14[,.]10%/gi, '')
-                .replace(/\+ \s*=/g, '=')
-                .replace(/R\$ \d+([,.]\d{3})?([,.]\d{2})? \s*[+\-=] \s*/g, '')
-                .replace(/Valor total: R\$ \d+([,.]\d{3})?([,.]\d{2})? \s*[+\-=]/gi, '')
-                .replace(/sem juros/gi, '')
-                .replace(/\bparcelado sem acréscimo\b/gi, 'parcelado');
-
         }
 
-        if (textoRespostaBot.includes('[[TRANSFERENCIA_HUMANA_CONFIRMADA]]')) {
+        // DETECÇÃO DE TRANSFERÊNCIA (Melhorada)
+        const lowerBotText = textoRespostaBot.toLowerCase();
+        const transferKeywords = [
+            '[[transferencia_humana_confirmada]]',
+            'chamando vendedor',
+            'chamando um especialista',
+            'chamando atendente',
+            'vou chamar um atendente',
+            'vou chamar o vendedor',
+            'transferindo para um humano',
+            'especialista humano'
+        ];
+
+        const isTransfer = transferKeywords.some(kw => lowerBotText.includes(kw));
+
+        if (isTransfer) {
+            console.log(`🚨 [TRANSFERÊNCIA] Gatilho detectado! Iniciando processo de e-mail para ${numeroCliente}`);
             botConfig.clientesMudos[numeroCliente] = Date.now();
             saveGlobalConfig();
-            if (client.info && client.info.wid) {
-                const meuNumero = client.info.wid._serialized;
-                await client.sendMessage(meuNumero, `🚨 *ATENÇÃO:* O cliente @${numeroCliente.split('@')[0]} pediu um humano!`);
+
+            // Dispara e-mail
+            try {
+                const chat = await msg.getChat();
+                const contact = await chat.getContact();
+                const nomeCliente = contact.pushname || contact.name || `Cliente ${numeroCliente.split('@')[0]}`;
+
+                console.log(`📧 Tentando enviar e-mail de transferência para: ${botConfig.notificationEmail || 'e-mail do sistema'}`);
+                sendTransferEmail(numeroCliente, nomeCliente)
+                    .then(info => console.log("✅ E-mail enviado com sucesso:", info.messageId))
+                    .catch(e => console.error("❌ FALHA CRÍTICA NO E-MAIL:", e.message));
+
+                if (client.info && client.info.wid) {
+                    client.sendMessage(client.info.wid._serialized, `🚨 *ATENÇÃO:* Cliente @${numeroCliente.split('@')[0]} pediu humano!`).catch(() => { });
+                }
+            } catch (e) {
+                console.error("❌ Erro ao preparar dados para e-mail:", e.message);
             }
         }
 
+        // LIMPEZA DE TEXTO PARA O WHATSAPP
         textoRespostaBot = textoRespostaBot.replace(/\[\[.*?\]\]/g, '').trim();
-        if (!textoRespostaBot) textoRespostaBot = "💁🏻‍♀️ Só um minutinho que vou verificar isso pra você!";
+        const regexFraseTransferencia = /[\[_]?Chamando vendedor[….]{1,3} só um instante[_\]]? \s*(🏃🏻‍♀️)?(➡️)?/gi;
+        textoRespostaBot = textoRespostaBot.replace(regexFraseTransferencia, 'Chamando vendedor... só um instante 🏃🏻‍♀️');
+        textoRespostaBot = textoRespostaBot.replace(/[\[\]_➡️]/g, '').trim();
 
+        if (!textoRespostaBot) textoRespostaBot = "💁🏻‍♀️ Só um minutinho que vou verificar isso pra você! 🏃🏻‍♀️";
+
+        // RESPONDE NO WHATSAPP
         botRespondendo[numeroCliente] = true;
         try {
-            const sentMsg = await msg.reply(textoRespostaBot, undefined, { linkPreview: false });
+            const sentMsg = await msg.reply(textoRespostaBot);
             botSentMsgIds.add(sentMsg.id._serialized);
             addHistory('bot', textoRespostaBot, 'iSti');
         } finally {

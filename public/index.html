@@ -27,6 +27,20 @@
         </header>
 
         <main class="content">
+            <!-- QR Code Card (Show only when needed) -->
+            <section id="qr-section" class="card glass-card hidden">
+                <div class="card-header">
+                    <h3>📲 Conectar WhatsApp</h3>
+                    <p>Escaneie o código abaixo com o seu celular (Aparelhos Conectados).</p>
+                </div>
+                <div class="card-body qr-container">
+                    <img id="qr-code-img" src="" alt="WhatsApp QR Code">
+                    <div class="qr-info">
+                        <p>O código expira em 30 segundos. Atualize se necessário.</p>
+                    </div>
+                </div>
+            </section>
+
             <!-- Personality Card -->
             <section class="card glass-card">
                 <div class="card-header">
@@ -75,6 +89,25 @@
                             <input type="number" id="auto-return-minutes" value="10" min="0"
                                 style="width: 60px; border: 1px solid #E5E5EA; border-radius: 8px; padding: 6px;">
                             <span style="font-size: 14px;">minutos</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notification Settings Card -->
+            <section class="card glass-card">
+                <div class="card-header">
+                    <h3>📧 Configurações de Notificação</h3>
+                    <p>Receba avisos por e-mail quando o bot transferir para humano.</p>
+                </div>
+                <div class="card-body">
+                    <div class="schedule-group" style="border: none; padding: 0;">
+                        <label>E-mail para Notificação</label>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <input type="email" id="notification-email" placeholder="seu-email@exemplo.com"
+                                style="flex: 1; border: 1px solid #E5E5EA; border-radius: 8px; padding: 10px; font-family: inherit;">
+                            <button id="btn-test-email" class="btn-refresh"
+                                style="margin: 0; padding: 10px 20px;">Testar</button>
                         </div>
                     </div>
                 </div>

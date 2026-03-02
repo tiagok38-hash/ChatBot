@@ -1,5 +1,5 @@
 const config = {
-    apiUrl: 'http://localhost:3000/api'
+    apiUrl: '/api'
 };
 
 // DOM Elements
@@ -11,10 +11,15 @@ const weekEnd = document.getElementById('weekday-end');
 const week24h = document.getElementById('weekday-24h');
 const weekendActive = document.getElementById('weekend-active');
 const autoReturnInput = document.getElementById('auto-return-minutes');
+const notificationEmailInput = document.getElementById('notification-email');
 const btnSave = document.getElementById('btn-save');
+const btnTestEmail = document.getElementById('btn-test-email');
 const btnRefresh = document.getElementById('refresh-chat');
 const chatHistory = document.getElementById('chat-history');
 const toast = document.getElementById('toast');
+const qrSection = document.getElementById('qr-section');
+const qrImg = document.getElementById('qr-code-img');
+const botNameLabel = document.querySelector('.bot-name');
 
 // Load initial config
 async function loadConfig() {
@@ -32,13 +37,31 @@ async function loadConfig() {
         weekendActive.checked = data.schedule.weekend;
         week24h.checked = data.schedule.weekday24h;
         autoReturnInput.value = data.schedule.autoReturnMinutes || 10;
+        notificationEmailInput.value = data.notificationEmail || '';
 
         // Initial setup for disabled/enabled state of time inputs
         toggleTimeInputs(data.schedule.weekday24h);
 
         loadHistory();
+        updateQR(); // Initial QR check
     } catch (err) {
         console.error('Erro ao conectar com API:', err);
+    }
+}
+
+// Update QR Code
+async function updateQR() {
+    try {
+        const res = await fetch(`${config.apiUrl}/qr`);
+        const data = await res.json();
+        if (data.qr) {
+            qrImg.src = data.qr;
+            qrSection.classList.remove('hidden');
+        } else {
+            qrSection.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('Erro ao buscar QR:', err);
     }
 }
 
@@ -104,7 +127,8 @@ async function saveSettings() {
             weekend: weekendActive.checked,
             weekday24h: week24h.checked,
             autoReturnMinutes: parseInt(autoReturnInput.value) || 0
-        }
+        },
+        notificationEmail: notificationEmailInput.value.trim()
     };
 
     try {
@@ -157,6 +181,27 @@ btnRefresh.addEventListener('click', (e) => {
     loadHistory();
 });
 
+btnTestEmail.addEventListener('click', async () => {
+    if (!notificationEmailInput.value) {
+        showToast('Preencha o e-mail primeiro!', true);
+        return;
+    }
+    btnTestEmail.textContent = 'Enviando...';
+    try {
+        const res = await fetch(`${config.apiUrl}/test-email`, { method: 'POST' });
+        if (res.ok) {
+            showToast('E-mail de teste enviado! Verifique seu Inbox/Spam.');
+        } else {
+            const err = await res.json();
+            showToast(`Erro: ${err.error}`, true);
+        }
+    } catch (e) {
+        showToast('Erro de conexão ao testar.', true);
+    } finally {
+        btnTestEmail.textContent = 'Testar';
+    }
+});
+
 // Toast system
 let toastTimeout;
 function showToast(msg, isError = false) {
@@ -172,3 +217,7 @@ function showToast(msg, isError = false) {
 
 // Init
 loadConfig();
+
+// Poll for QR and History
+setInterval(updateQR, 5000); // Check for QR every 5s
+setInterval(loadHistory, 15000); // Refresh history every 15s

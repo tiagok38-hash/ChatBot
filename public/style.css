@@ -82,7 +82,10 @@ body {
 .slider {
     position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: #D1D1D6;
     transition: .4s;
 }
@@ -96,18 +99,18 @@ body {
     bottom: 2px;
     background-color: white;
     transition: .4s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--green);
 }
 
-input:focus + .slider {
+input:focus+.slider {
     box-shadow: 0 0 1px var(--green);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(20px);
 }
 
@@ -129,6 +132,10 @@ input:checked + .slider:before {
     margin-bottom: 20px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
+}
+
+.hidden {
+    display: none !important;
 }
 
 .card-header h3 {
@@ -324,7 +331,7 @@ textarea:focus {
     border-radius: 4px;
 }
 
-.checkbox-container input:checked ~ .checkmark {
+.checkbox-container input:checked~.checkmark {
     background-color: var(--accent);
 }
 
@@ -334,7 +341,7 @@ textarea:focus {
     display: none;
 }
 
-.checkbox-container input:checked ~ .checkmark:after {
+.checkbox-container input:checked~.checkmark:after {
     display: block;
 }
 
@@ -352,4 +359,29 @@ textarea:focus {
     text-align: center;
     color: var(--text-secondary);
     padding: 20px 0;
+}
+
+/* QR Code Container */
+.qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+#qr-code-img {
+    width: 250px;
+    height: 250px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #E5E5EA;
+    margin-bottom: 16px;
+}
+
+.qr-info {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
 }

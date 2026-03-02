@@ -1,0 +1,11 @@
+node_modules
+.wwebjs_auth
+.wwebjs_cache
+bot.log
+.env
+.git
+.gitignore
+npm-debug.log
+README.md
+Dockerfile
+railway.json
