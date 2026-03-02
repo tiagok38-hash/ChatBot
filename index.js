@@ -523,7 +523,8 @@ ${agora} (Fuso de São Paulo)
         // RESPONDE NO WHATSAPP
         botRespondendo[numeroCliente] = true;
         try {
-            const sentMsg = await msg.reply(textoRespostaBot);
+            // Enviamos sem o preview de link para evitar o card no topo
+            const sentMsg = await client.sendMessage(numeroCliente, textoRespostaBot, { linkPreview: false });
             botSentMsgIds.add(sentMsg.id._serialized);
             addHistory('bot', textoRespostaBot, 'iSti');
         } finally {
