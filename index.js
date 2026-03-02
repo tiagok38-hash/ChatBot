@@ -142,15 +142,11 @@ function shouldBotRespond() {
 // --- CONFIGURAÇÃO DE E-MAIL ---
 const mailTransporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: process.env.MAIL_PORT || 465,
-    secure: true,
-    family: 4, // Força o uso de IPv4 para evitar erros ENETUNREACH (IPv6) no Railway/Docker
+    port: 587, // Alterado para porta 587, porta 465 costuma falhar em infra de nuvem
+    secure: false, // TLS via STARTTLS
     auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
-    },
-    tls: {
-        servername: process.env.MAIL_HOST || 'smtp.gmail.com'
     }
 });
 
@@ -516,6 +512,12 @@ ${agora} (Fuso de São Paulo)
         textoRespostaBot = textoRespostaBot.replace(/\[\[.*?\]\]/g, '').trim();
         const regexFraseTransferencia = /[\[_]?Chamando vendedor[….]{1,3} só um instante[_\]]? \s*(🏃🏻‍♀️)?(➡️)?/gi;
         textoRespostaBot = textoRespostaBot.replace(regexFraseTransferencia, 'Chamando vendedor... só um instante 🏃🏻‍♀️');
+
+        // LIMPEZA AGRESSIVA DE TAXAS DE JUROS (Garante que nunca apareça)
+        textoRespostaBot = textoRespostaBot.replace(/14,10%/g, '');
+        textoRespostaBot = textoRespostaBot.replace(/\(com acréscimo de\s*\:?\)/gi, '');
+        textoRespostaBot = textoRespostaBot.replace(/\(com acréscimo\s*\:?\)/gi, '');
+
         textoRespostaBot = textoRespostaBot.replace(/[\[\]_➡️]/g, '').trim();
 
         if (!textoRespostaBot) textoRespostaBot = "💁🏻‍♀️ Só um minutinho que vou verificar isso pra você! 🏃🏻‍♀️";
