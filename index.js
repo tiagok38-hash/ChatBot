@@ -465,24 +465,12 @@ ${agora} (Fuso de São Paulo)
 `;
             const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[RESPOSTAS CURTAS]\n\nESTOQUE:\n${estoque}`;
 
-            const modelBase = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash",
-                systemInstruction: promptSistema
-            });
+            const response = await openai.chat.completions.create({
+                model: "deepseek-chat",
+                messages: [{ role: "system", content: promptSistema }, ...historicoChats[numeroCliente], { role: "user", content: mensagemUsuario }],
+            }, { timeout: 30000 });
 
-            const chatHistory = historicoChats[numeroCliente]
-                .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-                .map(msg => ({
-                    role: msg.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: msg.content }]
-                }));
-
-            const chatSession = modelBase.startChat({
-                history: chatHistory,
-            });
-
-            const result = await chatSession.sendMessage(mensagemUsuario);
-            textoRespostaBot = result.response.text();
+            textoRespostaBot = response.choices[0].message.content;
         }
 
         // DETECÇÃO DE TRANSFERÊNCIA (Melhorada)
