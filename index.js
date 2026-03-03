@@ -14,6 +14,9 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const openai = new OpenAI({
     apiKey: process.env.DEEPSEEK_API_KEY,
@@ -143,29 +146,12 @@ function shouldBotRespond() {
     return respond;
 }
 
-// --- CONFIGURAÇÃO DE E-MAIL ---
-const mailTransporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.MAIL_PORT || '465'),
-    secure: (process.env.MAIL_PORT === '465' || !process.env.MAIL_PORT),
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    family: 4,
-    auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false,
-        servername: process.env.MAIL_HOST || 'smtp.gmail.com'
-    }
-});
-
+// --- CONFIGURAÇÃO DE E-MAIL (MUDANÇA PARA RESEND) ---
 async function sendTransferEmail(phone, customerName) {
-    console.log(`📡 Iniciando envio de e-mail para ${customerName} (${phone})...`);
-    return new Promise((resolve, reject) => {
-        const mailOptions = {
-            from: `"iSti Alert 🤖" <${process.env.MAIL_USER}>`,
+    console.log(`📡 Iniciando envio de e-mail via Resend para ${customerName} (${phone})...`);
+    try {
+        const { data, error } = await resend.emails.send({
+            from: 'iSti Alert <onboarding@resend.dev>',
             to: botConfig.notificationEmail || process.env.MAIL_USER,
             subject: `🚨 Transferência: ${customerName}`,
             text: `Um cliente solicitou atendimento humano.\n\n` +
@@ -173,17 +159,19 @@ async function sendTransferEmail(phone, customerName) {
                 `Telefone: ${phone}\n` +
                 `Link direto: https://wa.me/${phone.split('@')[0]}\n\n` +
                 `A iSti foi pausada para este número por ${botConfig.schedule.autoReturnMinutes || 10} minutos.`
-        };
-
-        mailTransporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error(`❌ ERRO NO ENVIO (DETALHADO):`, error);
-                return reject(error);
-            }
-            console.log(`📧 E-mail ENVIADO com sucesso! Resposta: ${info.response}`);
-            resolve(info);
         });
-    });
+
+        if (error) {
+            console.error(`❌ ERRO NO RESEND:`, error);
+            throw error;
+        }
+
+        console.log(`📧 E-mail ENVIADO via Resend! ID: ${data.id}`);
+        return data;
+    } catch (err) {
+        console.error(`❌ FALHA CRÍTICA NO ENVIO (RESEND):`, err.message);
+        throw err;
+    }
 }
 
 async function consultarEstoqueTexto() {
