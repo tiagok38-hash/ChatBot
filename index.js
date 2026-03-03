@@ -316,7 +316,7 @@ client.on('message_create', async (msg) => {
     const numeroCliente = msg.to;
 
     // Se a mensagem foi gerada pelo próprio código do bot, ignoramos o silenciamento
-    if (botSentMsgIds.has(msg.id._serialized)) {
+    if (botSentMsgIds.has(msg.id._serialized) || botRespondendo[numeroCliente]) {
         botSentMsgIds.delete(msg.id._serialized);
         return;
     }
