@@ -531,7 +531,7 @@ ${agora} (Fuso de São Paulo)
         if (!textoRespostaBot) textoRespostaBot = "💁🏻‍♀️ Só um minutinho que vou verificar isso pra você! 🏃🏻‍♀️";
 
         // RESPONDE NO WHATSAPP
-        if (botConfig.clientesMudos[numeroCliente]) {
+        if (botConfig.clientesMudos[numeroCliente] && !isTransfer) {
             console.log(`🛑 Intervenção humana detectada! Cancelando envio de resposta para ${numeroCliente}`);
             return;
         }
