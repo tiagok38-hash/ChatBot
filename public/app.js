@@ -20,6 +20,21 @@ const toast = document.getElementById('toast');
 const qrSection = document.getElementById('qr-section');
 const qrImg = document.getElementById('qr-code-img');
 const botNameLabel = document.querySelector('.bot-name');
+const themeToggleBtn = document.getElementById('theme-toggle');
+
+// Theme Management
+const savedTheme = localStorage.getItem('isti-theme');
+if (savedTheme === 'dark') {
+    document.body.classList.add('dark-theme');
+    themeToggleBtn.textContent = '☀️';
+}
+
+themeToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-theme');
+    const isDark = document.body.classList.contains('dark-theme');
+    themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('isti-theme', isDark ? 'dark' : 'light');
+});
 
 // Load initial config
 async function loadConfig() {

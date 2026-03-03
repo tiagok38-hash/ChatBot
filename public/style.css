@@ -385,3 +385,56 @@ textarea:focus {
     color: var(--text-secondary);
     font-size: 13px;
 }
+
+/* Dark Theme Transition */
+body,
+.card,
+textarea,
+input,
+.slider,
+.chat-bubble {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark Theme Variables */
+body.dark-theme {
+    --bg-color: #000000;
+    --card-bg: rgba(28, 28, 30, 0.75);
+    --text-primary: #F2F2F7;
+    --text-secondary: #AEAEB2;
+    --border: rgba(255, 255, 255, 0.15);
+}
+
+/* Overrides for Inputs & Specific Classes */
+body.dark-theme .slider {
+    background-color: #3A3A3C;
+}
+
+body.dark-theme textarea,
+body.dark-theme .time-inputs input,
+body.dark-theme input[type="email"] {
+    background-color: #1C1C1E;
+    color: #F2F2F7;
+    border-color: #3A3A3C;
+}
+
+body.dark-theme .schedule-group {
+    border-color: #3A3A3C;
+}
+
+body.dark-theme .chat-bubble.bot {
+    background-color: #2C2C2E;
+    color: #F2F2F7;
+}
+
+body.dark-theme .floating-save {
+    background: linear-gradient(to top, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+}
+
+body.dark-theme .checkmark {
+    background-color: #3A3A3C;
+}
+
+body.dark-theme #qr-code-img {
+    background-color: #FFFFFF;
+}
