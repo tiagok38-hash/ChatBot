@@ -478,6 +478,8 @@ ${agora} (Fuso de São Paulo)
 [REGRAS CRÍTICAS DE NEGÓCIO]
 1. PRO vs PRO MAX: NUNCA confunda modelos Pro com Pro Max. Eles têm tamanhos e preços DIFERENTES.
 2. CPO = NOVO: Aparelhos CPO são NOVOS e LACRADOS. Se o cliente pedir "Novo", mostre os 'Novos' e os 'CPO'. Nunca mostre 'Seminovo' se pedirem Novo.
+3. CORES REAIS: Use APENAS as cores que aparecem no "ESTOQUE ATUAL". É PROIBIDO inventar cores padrão (Preto, Branco, etc) se elas não estiverem listadas para o modelo exato.
+4. ESTOQUE ESTRITO: Se o cliente perguntar se tem "todas as cores", mas o estoque listar apenas uma ou duas, diga quais são e NÃO confirme que tem todas.
 `;
         const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[REGRA DE AMBIGUIDADE]\nSe o cliente pedir um modelo genérico (ex: "iPhone 17"), e existirem variações (Normal, Pro, Pro Max) no estoque, você OBRIGATORIAMENTE deve listar as categorias disponíveis e perguntar qual versão ele deseja. NUNCA assuma que ele quer o Pro Max ou o Normal.\n\n[RESPOSTAS CURTAS]\n\nESTOQUE:\n${estoque}`;
 
