@@ -19,8 +19,7 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const openai = new OpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    baseURL: 'https://api.deepseek.com'
+    apiKey: process.env.OPENAI_API_KEY
 });
 
 // OpenAI Real para Whisper (Áudio)
@@ -502,9 +501,10 @@ FIM DO ESTOQUE — NÃO HÁ MAIS NENHUM PRODUTO ALÉM DOS LISTADOS ACIMA.
         const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[REGRA DE AMBIGUIDADE]\nSe o cliente pedir um modelo genérico (ex: "iPhone 17"), e existirem variações (Normal, Pro, Pro Max) no estoque, você OBRIGATORIAMENTE deve listar as categorias disponíveis e perguntar qual versão ele deseja. NUNCA assuma que ele quer o Pro Max ou o Normal.\n\n[RESPOSTAS CURTAS]\n\n${blocoEstoque}`;
 
         const response = await openai.chat.completions.create({
-            model: "deepseek-chat",
+            model: "gpt-4o-mini",
             messages: [{ role: "system", content: promptSistema }, ...historicoChats[numeroCliente], { role: "user", content: mensagemUsuario }],
-        }, { timeout: 30000 });
+            timeout: 30000
+        });
 
         const textoRespostaBot = response.choices[0].message.content;
         await enviarRespostaWhatsApp(numeroCliente, textoRespostaBot, msgRef, msgs, mensagemUsuario);
