@@ -498,13 +498,15 @@ ${estoque}
 FIM DO ESTOQUE — NÃO HÁ MAIS NENHUM PRODUTO ALÉM DOS LISTADOS ACIMA.
 ================================================================================
 `;
-        const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[REGRA DE AMBIGUIDADE]\nSe o cliente pedir um modelo genérico (ex: "iPhone 17"), e existirem variações (Normal, Pro, Pro Max) no estoque, você OBRIGATORIAMENTE deve listar as categorias disponíveis e perguntar qual versão ele deseja. NUNCA assuma que ele quer o Pro Max ou o Normal.\n\n[RESPOSTAS CURTAS]\n\n${blocoEstoque}`;
+        const promptSistema = `${botConfig.prompt}\n\n${regrasAdicionais}\n\n[REGRA DE AMBIGUIDADE]\nSe o cliente pedir um modelo genérico (ex: "iPhone 17"), e existirem variações (Normal, Pro, Pro Max) no estoque, você OBRIGATORIAMENTE deve listar as categorias disponíveis e perguntar qual versão ele deseja. NUNCA assuma que ele quer o Pro Max ou o Normal.\n\n${blocoEstoque}`;
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [{ role: "system", content: promptSistema }, ...historicoChats[numeroCliente], { role: "user", content: mensagemUsuario }],
-            timeout: 30000
-        });
+        const response = await openai.chat.completions.create(
+            {
+                model: "gpt-4o-mini",
+                messages: [{ role: "system", content: promptSistema }, ...historicoChats[numeroCliente], { role: "user", content: mensagemUsuario }]
+            },
+            { timeout: 45000 }
+        );
 
         const textoRespostaBot = response.choices[0].message.content;
         await enviarRespostaWhatsApp(numeroCliente, textoRespostaBot, msgRef, msgs, mensagemUsuario);
