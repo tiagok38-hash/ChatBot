@@ -183,7 +183,6 @@ async function consultarEstoqueTexto() {
         if (error) return 'Estoque indisponível.';
         if (!produtos || produtos.length === 0) return 'Estoque zerado.';
 
-        // Extrai GB do nome caso o campo storage esteja vazio
         function extrairStorage(p) {
             if (p.storage) {
                 const val = Number(p.storage);
@@ -199,76 +198,69 @@ async function consultarEstoqueTexto() {
             return '';
         }
 
-        // Formata preço corretamente: R$ 8.479,99
         function formatarPreco(price) {
             if (!price) return 'R$ 0,00';
             return 'R$ ' + Number(price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        const estoqueAgrupado = {};
+        // Agrupa variações únicas por "nome base" (ex: "iPhone 17 Pro Max")
+        const famílias = {};
+        const visto = new Set();
+
         produtos.forEach(p => {
             const local = (p.storageLocation || '').toLowerCase();
-            // REGRA: Se o local for "assistência", nunca mostrar ao cliente
             if (local.includes('assistência') || local.includes('assistencia')) return;
 
             const nomeCompleto = p.model || p.name || 'Produto sem nome';
             const nomeBase = nomeCompleto
                 .replace(/\s*\d+\s*(GB|TB)/i, '')
-                .replace(/\s*(Azul Profundo|Azul Névoa|Laranja Cósmico|Prateado|Titânio Natural|Titânio Preto|Titânio Branco|Titânio Azul|Titânio Areia|Meia-?noite|Estelar|Starlight|Lavanda|Lilás|Cinza Espacial|Dourado|Verde|Azul|Roxo|Amarelo|Rosa|Preto|Branco|Vermelho|Black|Midnight|Starlight|Silver|Grafite|Pacific Blue|Sierra Blue|Alpine Green|Deep Purple|Space Black|Natural Titanium|White Titanium|Black Titanium|Blue Titanium|Desert Titanium)\s*$/i, '')
+                .replace(/\s*(Azul Profundo|Azul Névoa|Laranja Cósmico|Prateado|Prata|Titânio Natural|Titânio Preto|Titânio Branco|Titânio Azul|Titânio Areia|Titânio Deserto|Meia-?noite|Estelar|Starlight|Lavanda|Lilás|Cinza Espacial|Dourado|Verde Alpino|Verde|Azul Céu|Azul|Roxo Profundo|Roxo|Amarelo|Rosa|Preto Espacial|Preto|Branco|Vermelho|Ultramarino|Black|Midnight|Silver|Grafite|Pacific Blue|Sierra Blue|Alpine Green|Deep Purple|Space Black|Natural Titanium|White Titanium|Black Titanium|Blue Titanium|Desert Titanium|Rose Gold|Branco\/Prata|\(PRODUCT\)RED)\s*$/i, '')
                 .trim();
+
             const storageVal = extrairStorage(p);
-            const cor = p.color || 'padrão';
+            const cor = (p.color || '').trim() || 'padrão';
             const condicao = p.condition || 'Novo';
-            const garantia = (p.warranty || '').toLowerCase().trim();
+            const storageStr = storageVal ? (storageVal.includes('TB') ? storageVal : `${storageVal}GB`) : '';
 
-            const chave = `${nomeBase.toLowerCase()}-${cor.toLowerCase()}-${storageVal.toLowerCase()}-${condicao.toLowerCase()}-${local}`;
+            // Chave única para evitar duplicatas
+            const chaveUnica = `${nomeBase.toLowerCase()}|${storageStr.toLowerCase()}|${cor.toLowerCase()}|${condicao.toLowerCase()}`;
+            if (visto.has(chaveUnica)) return;
+            visto.add(chaveUnica);
 
-            if (!estoqueAgrupado[chave]) {
-                let display = nomeBase;
-                const storageStr = storageVal.includes('TB') ? storageVal : (storageVal ? `${storageVal}GB` : '');
-                if (storageStr && !display.includes(storageStr)) display += ` ${storageStr}`;
-                display += ` (${cor} / ${condicao})`;
-
-                // Formata o local para exibição amigável ao cliente
-                let localDisplay = "Loja Santa Cruz";
-                if (local.includes('caruaru')) localDisplay = "Caruaru";
-
-                estoqueAgrupado[chave] = {
-                    display,
-                    price: p.price,
-                    location: localDisplay,
-                    warranty: garantia ? ` [Garantia: ${garantia}]` : '',
-                    battery: condicao !== 'Novo' && p.batteryHealth ? ` [Saúde: ${p.batteryHealth}%]` : ''
-                };
-            }
+            if (!famílias[nomeBase]) famílias[nomeBase] = [];
+            famílias[nomeBase].push({ storageStr, cor, condicao, price: p.price });
         });
 
-        const getPriority = (name) => {
-            const n = name.toLowerCase();
-            if (n.includes('bateria') || n.includes('tela') || n.includes('peça') || n.includes('acessórios')) return 10;
-            if (n.includes('iphone')) return 1;
-            if (n.includes('ipad')) return 2;
-            if (n.includes('watch')) return 3;
-            if (n.includes('mac')) return 4;
-            if (n.includes('airpods')) return 5;
-            return 6;
+        // Ordena famílias: iPhones primeiro
+        const ordemFamilia = (nome) => {
+            const n = nome.toLowerCase();
+            if (n.includes('iphone')) return '1_' + nome;
+            if (n.includes('ipad')) return '2_' + nome;
+            if (n.includes('watch')) return '3_' + nome;
+            if (n.includes('mac')) return '4_' + nome;
+            if (n.includes('airpod')) return '5_' + nome;
+            return '6_' + nome;
         };
 
-        const sorted = Object.values(estoqueAgrupado)
-            .sort((a, b) => {
-                const prioA = getPriority(a.display);
-                const prioB = getPriority(b.display);
-                if (prioA !== prioB) return prioA - prioB;
-                return a.display.localeCompare(b.display);
-            })
-            .slice(0, 800);
+        const familiasOrdenadas = Object.entries(famílias)
+            .sort(([a], [b]) => ordemFamilia(a).localeCompare(ordemFamilia(b)));
 
-        const listaFinal = sorted.map(item => `- ${item.display}${item.battery}${item.warranty} -> ${formatarPreco(item.price)}`);
-        return `[ESTOQUE ATUAL]\n${listaFinal.join('\n')}`;
+        const blocos = familiasOrdenadas.map(([familia, variações]) => {
+            const linhas = variações.map(v => {
+                const gb = v.storageStr ? `${v.storageStr} ` : '';
+                const cond = v.condicao !== 'Novo' ? ` [${v.condicao}]` : '';
+                return `  • ${gb}${v.cor}${cond} — ${formatarPreco(v.price)}`;
+            });
+            return `[${familia}]\nOpções disponíveis (SOMENTE ESTAS, não existem outras):\n${linhas.join('\n')}`;
+        });
+
+        return blocos.join('\n\n');
     } catch (err) {
         return 'Erro interno ao ler estoque.';
     }
 }
+
+
 
 const client = new Client({
     authStrategy: new LocalAuth({
