@@ -174,91 +174,9 @@ async function sendTransferEmail(phone, customerName) {
 }
 
 async function consultarEstoqueTexto() {
-    try {
-        const { data: produtos, error } = await supabase
-            .from('products')
-            .select('name, model, color, storage, condition, price, stock, batteryHealth, warranty, storageLocation')
-            .gt('stock', 0);
-
-        if (error) return 'Estoque indisponível.';
-        if (!produtos || produtos.length === 0) return 'Estoque zerado.';
-
-        function extrairStorage(p) {
-            if (p.storage) {
-                const val = Number(p.storage);
-                if (val >= 1000) return (val / 1000) + 'TB';
-                return String(val);
-            }
-            const nomeParaBusca = p.name || p.model || '';
-            const match = nomeParaBusca.match(/(\d+)\s*(GB|TB)/i);
-            if (match) {
-                if (match[2].toUpperCase() === 'TB') return match[1] + 'TB';
-                return match[1];
-            }
-            return '';
-        }
-
-        function formatarPreco(price) {
-            if (!price) return 'R$ 0,00';
-            return 'R$ ' + Number(price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        // Agrupa variações únicas por "nome base" (ex: "iPhone 17 Pro Max")
-        const famílias = {};
-        const visto = new Set();
-
-        produtos.forEach(p => {
-            const local = (p.storageLocation || '').toLowerCase();
-            if (local.includes('assistência') || local.includes('assistencia')) return;
-
-            const nomeCompleto = p.model || p.name || 'Produto sem nome';
-            const nomeBase = nomeCompleto
-                .replace(/\s*\d+\s*(GB|TB)/i, '')
-                .replace(/\s*(Azul Profundo|Azul Névoa|Laranja Cósmico|Prateado|Prata|Titânio Natural|Titânio Preto|Titânio Branco|Titânio Azul|Titânio Areia|Titânio Deserto|Meia-?noite|Estelar|Starlight|Lavanda|Lilás|Cinza Espacial|Dourado|Verde Alpino|Verde|Azul Céu|Azul|Roxo Profundo|Roxo|Amarelo|Rosa|Preto Espacial|Preto|Branco|Vermelho|Ultramarino|Black|Midnight|Silver|Grafite|Pacific Blue|Sierra Blue|Alpine Green|Deep Purple|Space Black|Natural Titanium|White Titanium|Black Titanium|Blue Titanium|Desert Titanium|Rose Gold|Branco\/Prata|\(PRODUCT\)RED)\s*$/i, '')
-                .trim();
-
-            const storageVal = extrairStorage(p);
-            const cor = (p.color || '').trim() || 'padrão';
-            const condicao = p.condition || 'Novo';
-            const storageStr = storageVal ? (storageVal.includes('TB') ? storageVal : `${storageVal}GB`) : '';
-
-            // Chave única para evitar duplicatas
-            const chaveUnica = `${nomeBase.toLowerCase()}|${storageStr.toLowerCase()}|${cor.toLowerCase()}|${condicao.toLowerCase()}`;
-            if (visto.has(chaveUnica)) return;
-            visto.add(chaveUnica);
-
-            if (!famílias[nomeBase]) famílias[nomeBase] = [];
-            famílias[nomeBase].push({ storageStr, cor, condicao, price: p.price });
-        });
-
-        // Ordena famílias: iPhones primeiro
-        const ordemFamilia = (nome) => {
-            const n = nome.toLowerCase();
-            if (n.includes('iphone')) return '1_' + nome;
-            if (n.includes('ipad')) return '2_' + nome;
-            if (n.includes('watch')) return '3_' + nome;
-            if (n.includes('mac')) return '4_' + nome;
-            if (n.includes('airpod')) return '5_' + nome;
-            return '6_' + nome;
-        };
-
-        const familiasOrdenadas = Object.entries(famílias)
-            .sort(([a], [b]) => ordemFamilia(a).localeCompare(ordemFamilia(b)));
-
-        const blocos = familiasOrdenadas.map(([familia, variações]) => {
-            const linhas = variações.map(v => {
-                const gb = v.storageStr ? `${v.storageStr} ` : '';
-                const cond = v.condicao !== 'Novo' ? ` [${v.condicao}]` : '';
-                return `  • ${gb}${v.cor}${cond} — ${formatarPreco(v.price)}`;
-            });
-            return `[${familia}]\nOpções disponíveis (SOMENTE ESTAS, não existem outras):\n${linhas.join('\n')}`;
-        });
-
-        return blocos.join('\n\n');
-    } catch (err) {
-        return 'Erro interno ao ler estoque.';
-    }
+    return ""; // O estoque agora é lido de maneira estática do arquivo de personalidade
 }
+
 
 
 

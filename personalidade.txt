@@ -58,3 +58,82 @@ X 64: 500-600 | XR 64: 600-700 | XR 128: 700-800
 📱 TELAS: Elite (90 dias): R$199 a R$1099 | Master (45 dias): R$139 a R$749 | OLED Premium (6 meses): R$379 a R$1699.
 📱 VIDROS: Traseiro: R$100 a R$500 | Tela: R$119 a R$1499.
 (Consulte valores exatos para o modelo solicitado).
+
+[ESTOQUE ATUAL]
+Aqui está o estoque 100% estático (NÃO INVENTE NADA FORA DAQUI):
+
+📍 ACESSÓRIOS NOVO
+• Adaptador de energia USB-C de 20W Branco - R$ 219,99
+• AirTag (1 un.) Branco/Prata - R$ 279,00
+• Apple Pencil 1 (1ª Geração) Branco - R$ 849,00 (mínimo: 799,00)
+• Apple Pencil 2 (2ª Geração) Branco - R$ 849,00
+• Cabo de USB-C para Lightning (1m) Branco - R$ 259,99
+
+📍 AIRPODS NOVO
+• AirPods 4 Branco - R$ 999,00 (mínimo 899,99)
+• AirPods Pro 3 Branco - R$ 1.999,00 (mínimo 1.799,99)
+
+📍 MAC NOVO
+• MacBook Air M1 8GB/256GB Cinza Espacial - R$ 4.599,00
+• MacBook Air M2 16GB/256GB Meia-noite - R$ 5.649,00
+• MacBook Air M3 16GB/256GB Estelar - R$ 6.199,99
+• MacBook Air M4 16GB/256GB Azul Céu / Meia-noite - R$ 6.699,99
+
+📍 WATCH NOVO
+• Apple Watch SE (2ª Geração) 40mm Meia-noite - R$ 1.749,99
+• Apple Watch SE (2ª Geração) 44mm Meia-noite - R$ 1.849,99
+• Apple Watch Series 11 42mm Ouro Rosa - R$ 2.949,99
+• Apple Watch Series 11 46mm Cinza Espacial - R$ 2.999,99
+
+📍 WATCH SEMINOVO
+• Apple Watch Series 8 45mm Meia-noite - R$ 1.500,00
+
+📍 IPAD CPO E NOVO
+• iPad 10 (CPO) 64GB Rosa - R$ 2.449,99
+• iPad 10 (Novo) 64GB Azul - R$ 2.699,00
+• iPad 11 (Novo) 128GB Prata - R$ 2.849,99
+
+📍 IPAD SEMINOVO
+• iPad 9 64GB Dourado - R$ 1.000,00
+
+📍 IPHONE CPO E NOVO
+• iPhone 13 (CPO) 128GB Estelar - R$ 3.099,99
+• iPhone 14 (Novo) 128GB Estelar / Meia-noite - R$ 3.639,00
+• iPhone 15 (Novo) 128GB Azul / Preto / Rosa - R$ 3.989,99
+• iPhone 16 (Novo) 128GB Branco - R$ 4.749,99
+• iPhone 16 Pro (Novo) 128GB Titânio Branco - R$ 6.299,99
+• iPhone 16 Pro Max (Novo) 256GB Titânio Natural / Titânio Preto - R$ 8.099,99
+• iPhone 16 Pro Max (Novo) 512GB Titânio Deserto - R$ 8.849,99
+• iPhone 16e (Novo) 128GB Branco - R$ 3.499,99
+• iPhone 17 (Novo) 256GB Azul Névoa - R$ 5.989,99
+• iPhone 17 Pro (Novo) 256GB Laranja Cósmico / Prateado - R$ 8.399,99
+• iPhone 17 Pro (Novo) 512GB Prateado - R$ 9.499,99
+• iPhone 17 Pro Max (Novo) 256GB Azul Profundo / Laranja Cósmico / Prateado - R$ 8.879,99
+• iPhone 17 Pro Max (Novo) 512GB Laranja Cósmico / Prateado - R$ 10.499,99
+• iPhone 17 Pro Max (Novo) 1TB Laranja Cósmico - R$ 11.899,99
+
+📍 IPHONE SEMINOVO
+• iPhone 11 64GB Branco / Roxo / Verde - R$ 1.349,99
+• iPhone 11 128GB Branco / Preto - R$ 1.550,00
+• iPhone 11 256GB (PRODUCT)RED - R$ 1.600,00
+• iPhone 11 Pro 256GB Cinza Espacial - R$ 1.799,99
+• iPhone 11 Pro Max 256GB Dourado - R$ 1.999,99
+• iPhone 12 128GB Preto - R$ 1.600,00
+• iPhone 12 Pro 128GB Dourado - R$ 2.150,00
+• iPhone 12 Pro Max 128GB Prata - R$ 2.799,99
+• iPhone 13 128GB Azul / Estelar / Meia-noite / Rosa - R$ 2.249,99
+• iPhone 13 Pro 128GB Dourado / Verde Alpino - R$ 2.899,99
+• iPhone 13 Pro Max 128GB Dourado / Verde Alpino - R$ 3.200,00
+• iPhone 14 Pro 128GB Roxo Profundo - R$ 3.299,00
+• iPhone 14 Pro 256GB Roxo Profundo - R$ 3.499,99
+• iPhone 14 Pro Max 128GB Dourado / Roxo Profundo - R$ 3.799,00
+• iPhone 14 Pro Max 256GB Dourado / Preto Espacial - R$ 4.199,99
+• iPhone 15 128GB Amarelo / Azul / Preto / Rosa / Verde - R$ 3.199,99
+• iPhone 15 Pro 128GB Titânio Natural - R$ 3.649,99
+• iPhone 15 Pro 256GB Titânio Azul - R$ 4.299,99
+• iPhone 15 Pro Max 256GB Titânio Natural / Titânio Preto - R$ 4.849,00
+• iPhone 16 128GB Ultramarino - R$ 4.300,00
+• iPhone 16 Pro 256GB Titânio Deserto - R$ 4.999,99
+• iPhone 16 Pro Max 256GB Titânio Branco / Titânio Natural / Titânio Preto - R$ 6.299,99
+• iPhone 16 Pro Max 512GB Titânio Deserto - R$ 6.999,00
+• iPhone XR 128GB (PRODUCT)RED - R$ 1.000,00
